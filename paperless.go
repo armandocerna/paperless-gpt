@@ -800,10 +800,21 @@ func (client *PaperlessClient) DownloadDocumentAsImages(ctx context.Context, doc
 		g.Go(func() error {
 			// DPI calculation constants
 			const minDPI = 72                     // Minimum DPI to ensure readable text
-			const maxPixelDimension = 10_000      // Maximum pixels along any side (10,000px)
+			const defaultMaxPixelDim = 7_500      // Default max pixels along any side (safe for Anthropic's 8,000px limit)
 			const maxTotalPixels = 40_000_000     // Maximum total pixel count (40 megapixels)
 			const maxRenderDPI = 600              // Maximum DPI to use when rendering
 			const maxFileBytes = 10 * 1024 * 1024 // Maximum JPEG file size (10 MB)
+
+			// Allow override via environment variable
+			maxPixelDimension := defaultMaxPixelDim
+			if v := os.Getenv("OCR_IMAGE_MAX_PIXEL_DIMENSION"); v != "" {
+				if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+					maxPixelDimension = parsed
+					logrus.Debugf("Using custom max pixel dimension: %d", maxPixelDimension)
+				} else {
+					logrus.Warnf("Invalid OCR_IMAGE_MAX_PIXEL_DIMENSION value %q, using default %d", v, defaultMaxPixelDim)
+				}
+			}
 
 			mu.Lock() // MuPDF is not thread-safe
 			rect, err := doc.Bound(n)

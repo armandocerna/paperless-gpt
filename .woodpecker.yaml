@@ -1,0 +1,32 @@
+when:
+  event:
+    - push
+  branch:
+    - main
+
+steps:
+  - name: build
+    image: woodpeckerci/plugin-kaniko
+    settings:
+      registry: registry.registry.svc.cluster.local:5000
+      repo: paperless-gpt
+      tags: ${CI_COMMIT_SHA:0:8}
+      dockerfile: Dockerfile
+      context: .
+      insecure: true
+      skip_tls_verify: true
+
+  - name: update-image-tag
+    image: alpine/git
+    environment:
+      GITHUB_TOKEN:
+        from_secret: github_token
+    commands:
+      - git clone https://x-access-token:$${GITHUB_TOKEN}@github.com/armandocerna/argocd-homelab.git /tmp/homelab
+      - cd /tmp/homelab
+      - git config user.email "woodpecker@ci.local"
+      - git config user.name "Woodpecker CI"
+      - sed -i "s/newTag:.*/newTag: ${CI_COMMIT_SHA:0:8}/" paperless/kustomization.yaml
+      - git add paperless/kustomization.yaml
+      - git commit -m "Update paperless-gpt image to ${CI_COMMIT_SHA:0:8} [skip ci]"
+      - git push origin main

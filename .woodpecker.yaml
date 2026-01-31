@@ -23,10 +23,9 @@ steps:
         from_secret: github_token
     commands:
       - git clone https://x-access-token:$${GITHUB_TOKEN}@github.com/armandocerna/argocd-homelab.git /tmp/homelab
-      - cd /tmp/homelab
-      - git config user.email "woodpecker@ci.local"
-      - git config user.name "Woodpecker CI"
-      - sed -i "s/newTag:.*/newTag: ${CI_COMMIT_SHA:0:8}/" paperless/kustomization.yaml
-      - git add paperless/kustomization.yaml
-      - git commit -m "Update paperless-gpt image to ${CI_COMMIT_SHA:0:8} [skip ci]"
-      - git push origin main
+      - git -C /tmp/homelab config user.email "woodpecker@ci.local"
+      - git -C /tmp/homelab config user.name "Woodpecker CI"
+      - 'sed -i "s/newTag:.*/newTag: \"${CI_COMMIT_SHA:0:8}\"/" /tmp/homelab/paperless/kustomization.yaml'
+      - git -C /tmp/homelab add paperless/kustomization.yaml
+      - 'git -C /tmp/homelab commit -m "Update paperless-gpt image to ${CI_COMMIT_SHA:0:8} [skip ci]"'
+      - git -C /tmp/homelab push origin main
